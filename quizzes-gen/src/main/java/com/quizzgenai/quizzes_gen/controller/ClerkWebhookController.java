@@ -27,6 +27,7 @@ public class ClerkWebhookController {
                                                 @RequestBody String payload) {
 
         System.out.println("clerk controller");
+        System.out.println("=============================================================");
         System.out.println(payload);
 
         try{
