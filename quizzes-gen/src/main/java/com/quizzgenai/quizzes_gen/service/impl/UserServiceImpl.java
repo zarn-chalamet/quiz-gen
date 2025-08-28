@@ -41,7 +41,7 @@ public class UserServiceImpl implements UserService {
                 .build();
     }
 
-    private UserDto updateUser(UserDto userDto) {
+    public UserDto updateUser(UserDto userDto) {
 
         UserDocument existingUser = userRepository.findByClerkId(userDto.getClerkId());
 
