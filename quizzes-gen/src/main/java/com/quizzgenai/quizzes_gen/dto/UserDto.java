@@ -1,12 +1,9 @@
-package com.quizzgenai.quizzes_gen.document;
+package com.quizzgenai.quizzes_gen.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
@@ -14,17 +11,13 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Document(collection = "users")
-public class UserDocument {
+public class UserDto {
 
-    @Id
     private String id;
     private String clerkId;
     private String email;
     private String firstName;
     private String lastName;
     private String photoUrl;
-
-    @CreatedDate
     private LocalDateTime createdAt;
 }
