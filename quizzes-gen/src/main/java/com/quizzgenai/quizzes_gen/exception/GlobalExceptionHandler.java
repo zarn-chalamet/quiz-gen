@@ -9,7 +9,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(QuizNoFoundException.class)
-    public ProblemDetail handleUserAlreadyExistException(QuizNoFoundException e) {
+    public ProblemDetail handleQuizNoFoundException(QuizNoFoundException e) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
+    }
+
+    @ExceptionHandler(FlashcardNotFoundException.class)
+    public ProblemDetail handleFlashcardNotFoundException(FlashcardNotFoundException e) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
     }
 
