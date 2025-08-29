@@ -5,6 +5,8 @@ import com.quizzgenai.quizzes_gen.dto.UserDto;
 import com.quizzgenai.quizzes_gen.repository.UserRepository;
 import com.quizzgenai.quizzes_gen.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -88,6 +90,18 @@ public class UserServiceImpl implements UserService {
         if(existingUser != null) {
             userRepository.delete(existingUser);
         }
+    }
+
+    @Override
+    public UserDocument getCurrentUser() {
+
+        if(SecurityContextHolder.getContext().getAuthentication() == null) {
+            throw new UsernameNotFoundException("User not authenticated");
+        }
+
+        String clerkId = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByClerkId(clerkId);
+
     }
 
 }

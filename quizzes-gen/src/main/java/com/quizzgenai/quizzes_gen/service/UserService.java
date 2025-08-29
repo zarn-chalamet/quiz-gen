@@ -1,5 +1,6 @@
 package com.quizzgenai.quizzes_gen.service;
 
+import com.quizzgenai.quizzes_gen.document.UserDocument;
 import com.quizzgenai.quizzes_gen.dto.UserDto;
 
 public interface UserService {
@@ -8,4 +9,6 @@ public interface UserService {
     UserDto updateUser(UserDto updatedUser);
 
     void deleteUser(String clerkId);
+
+    public UserDocument getCurrentUser();
 }
