@@ -1,6 +1,7 @@
 package com.quizzgenai.quizzes_gen.dto;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -37,6 +38,7 @@ public class QuizDto {
         private Integer id;
         private String label;
         private String text;
+        @JsonProperty("isCorrect")
         private boolean isCorrect;
     }
 }

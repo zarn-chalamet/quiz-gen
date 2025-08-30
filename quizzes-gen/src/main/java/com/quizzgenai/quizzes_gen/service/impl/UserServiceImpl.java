@@ -95,13 +95,14 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDocument getCurrentUser() {
 
-        if(SecurityContextHolder.getContext().getAuthentication() == null) {
-            throw new UsernameNotFoundException("User not authenticated");
-        }
+//        if(SecurityContextHolder.getContext().getAuthentication() == null) {
+//            throw new UsernameNotFoundException("User not authenticated");
+//        }
+//
+////        String clerkId = SecurityContextHolder.getContext().getAuthentication().getName();
+//        return userRepository.findByClerkId(clerkId);
 
-        String clerkId = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepository.findByClerkId(clerkId);
-
+        return userRepository.findByClerkId("user_31vBZJDus1LTqaKgtyrb7nWYB95");
     }
 
 }

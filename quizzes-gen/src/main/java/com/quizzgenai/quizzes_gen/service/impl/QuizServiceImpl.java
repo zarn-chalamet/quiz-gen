@@ -25,10 +25,15 @@ public class QuizServiceImpl implements QuizService {
 
         //get current user
         UserDocument user = userService.getCurrentUser();
-
+        System.out.println("create quiz");
+        System.out.println("quiz dto");
+        System.out.println(quizDto);
         QuizDocument quiz = dtoToDoc(quizDto,user);
+        System.out.println("quiz document");
+        System.out.println(quiz);
         QuizDocument createdQuiz = quizRepository.save(quiz);
-
+        System.out.println("created quiz");
+        System.out.println(createdQuiz);
         return docToDto(createdQuiz);
     }
 
@@ -48,7 +53,6 @@ public class QuizServiceImpl implements QuizService {
         // 2. Update fields
         quiz.setTitle(quizDto.getTitle());
         quiz.setImg(quizDto.getImg());
-        quiz.setClerkId(quizDto.getClerkId());
 
         if (quizDto.getQuestions() != null) {
             quiz.setQuestions(
@@ -145,7 +149,7 @@ public class QuizServiceImpl implements QuizService {
                                                                 .id(o.getId())
                                                                 .label(o.getLabel())
                                                                 .text(o.getText())
-                                                                .isCorrect(o.isCorrect())
+                                                                .isCorrect(o.isCorrect() ? true : false)
                                                                 .build())
                                                         .toList()
                                                         : null

@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/flash-cards")
+@RequestMapping("/test/flash-cards")
 @RequiredArgsConstructor
 public class FlashcardController {
 

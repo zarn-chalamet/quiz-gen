@@ -1,5 +1,6 @@
 package com.quizzgenai.quizzes_gen.document;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
