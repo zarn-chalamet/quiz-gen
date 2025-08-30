@@ -2,7 +2,9 @@ package com.quizzgenai.quizzes_gen.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.quizzgenai.quizzes_gen.dto.FlashcardDto;
 import com.quizzgenai.quizzes_gen.dto.QuizDto;
+import com.quizzgenai.quizzes_gen.service.FlashcardService;
 import com.quizzgenai.quizzes_gen.service.GeminiService;
 import com.quizzgenai.quizzes_gen.service.GenerationService;
 import com.quizzgenai.quizzes_gen.service.QuizService;
@@ -24,6 +26,7 @@ public class GenerationServiceImpl implements GenerationService {
 
     private final GeminiService geminiService;
     private final QuizService quizService;
+    private final FlashcardService flashcardService;
 
     @Override
     public QuizDto generateQuizFromFile(MultipartFile file,
@@ -66,6 +69,48 @@ public class GenerationServiceImpl implements GenerationService {
 
         } catch (Exception e) {
             throw new RuntimeException("Failed to generate quiz ", e);
+        }
+    }
+
+    @Override
+    public FlashcardDto generateFlashcardFromFile(MultipartFile file, int quantity) {
+        try{
+            //extract text from file
+            String text = extractTextFromFile(file);
+            System.out.println("extracted text");
+            System.out.println(text);
+
+            //call ai api to generate quiz
+            String apiResponse = geminiService.generateFlashcard(text,quantity);
+
+            System.out.println("api response ====================");
+            System.out.println(apiResponse);
+
+            //map ai json response to dto
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(apiResponse);
+
+            // extract the actual quiz JSON string
+            String flashcardJson = root.at("/candidates/0/content/parts/0/text").asText();
+
+            // strip ```json fences if present
+            if (flashcardJson.startsWith("```")) {
+                flashcardJson = flashcardJson.replaceAll("```json", "")
+                        .replaceAll("```", "")
+                        .trim();
+            }
+
+            // deserialize into QuizDto
+            FlashcardDto flashcardDto = mapper.readValue(flashcardJson, FlashcardDto.class);
+
+            System.out.println("Flashcard Dto");
+            System.out.println(flashcardDto);
+
+            //create quiz(save quiz to mongodb)
+            return flashcardService.createFlashcards(flashcardDto);
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 

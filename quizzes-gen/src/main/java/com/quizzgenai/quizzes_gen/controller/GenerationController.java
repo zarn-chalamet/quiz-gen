@@ -1,5 +1,6 @@
 package com.quizzgenai.quizzes_gen.controller;
 
+import com.quizzgenai.quizzes_gen.dto.FlashcardDto;
 import com.quizzgenai.quizzes_gen.dto.QuizDto;
 import com.quizzgenai.quizzes_gen.service.GenerationService;
 import lombok.RequiredArgsConstructor;
@@ -18,11 +19,19 @@ public class GenerationController {
 
     private final GenerationService quizGenerationService;
 
-    @PostMapping()
+    @PostMapping("/quiz")
     public ResponseEntity<?> generateQuiz(@RequestParam("file") MultipartFile file,
                                           @RequestParam("quantity") int quantity) {
         QuizDto quiz = quizGenerationService.generateQuizFromFile(file,quantity);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(quiz);
+    }
+
+    @PostMapping("/flash-cards")
+    public ResponseEntity<?> generateFlashcard(@RequestParam("file") MultipartFile file,
+                                          @RequestParam("quantity") int quantity) {
+        FlashcardDto flashcard = quizGenerationService.generateFlashcardFromFile(file,quantity);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(flashcard);
     }
 }

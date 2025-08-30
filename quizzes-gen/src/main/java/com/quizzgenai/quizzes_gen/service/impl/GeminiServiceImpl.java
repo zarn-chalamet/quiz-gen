@@ -80,4 +80,55 @@ public class GeminiServiceImpl implements GeminiService {
 
         return response;
     }
+
+    @Override
+    public String generateFlashcard(String text, int quantity) {
+        // Create prompt that forces Gemini to respond with the correct FlashcardDto structure
+        String prompt = """
+        You are a flashcard generator. Based on the following study material, generate flashcards.
+
+        Study material:
+        %s
+
+        Generate exactly %d cards in JSON format that follows this Java DTO structure:
+
+        {
+          "title": "string (short flashcard set title)",
+          "description": "string (short description of the flashcard set)",
+          "img": "string (image url or leave empty)",
+          "cards": [
+            {
+              "id": int,
+              "question": "string (the question side of the card)",
+              "answer": "string (the answer side of the card)"
+            }
+          ]
+        }
+
+        Rules:
+        - Only return JSON, no explanations.
+        - IDs must be unique within the flashcard set.
+        - The "cards" list must contain exactly %d items.
+        """.formatted(text, quantity, quantity);
+
+        Map<String, Object> requestBody = Map.of(
+                "contents", new Object[] {
+                        Map.of("parts", new Object[] {
+                                Map.of("text", prompt)
+                        })
+                }
+        );
+
+        String response = webClient.post()
+                .uri(geminiApiUrl)
+                .header("Content-Type", "application/json")
+                .header("X-goog-api-key", geminiApiKey)
+                .bodyValue(requestBody)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+
+        return response;
+    }
+
 }
