@@ -2,86 +2,71 @@ import React, { useState, useEffect } from "react";
 import PageLayout from "../layout/PageLayout";
 import { Search, BookOpen, Layers, Eye, MoreVertical, Plus, Filter, FileText, Clock } from "lucide-react";
 import test from "../assets/test.jpg";
+import toast from "react-hot-toast";
+import { useAuth } from "@clerk/clerk-react";
+import axios from "axios";
+import { apiEndpoints } from "../api/apiEndpoints";
+import defaultImage from "../assets/test.jpg"
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
+
   const [activeTab, setActiveTab] = useState("quizzes");
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("recent");
+  const {getToken} = useAuth();
+
+  const navigate = useNavigate();
 
   // Mock data matching your DTO structure
-  const [quizzes, setQuizzes] = useState([
-    {
-      id: "1",
-      title: "Java Basics",
-      img: test,
-      clerkId: "123",
-      questions: [
-        {
-          id: 1,
-          text: "What is the default value of a boolean variable in Java?",
-          options: [
-            { id: 1, label: "A", text: "true", isCorrect: false },
-            { id: 2, label: "B", text: "false", isCorrect: true },
-            { id: 3, label: "C", text: "null", isCorrect: false },
-            { id: 4, label: "D", text: "0", isCorrect: false }
-          ]
-        },
-        {
-          id: 2,
-          text: "Which keyword is used to inherit a class in Java?",
-          options: [
-            { id: 1, label: "A", text: "implements", isCorrect: false },
-            { id: 2, label: "B", text: "extends", isCorrect: true },
-            { id: 3, label: "C", text: "inherits", isCorrect: false },
-            { id: 4, label: "D", text: "super", isCorrect: false }
-          ]
-        }
-      ]
-    },
-    {
-      id: "2",
-      title: "React Fundamentals",
-      img: test,
-      clerkId: "123",
-      questions: [
-        {
-          id: 1,
-          text: "What is JSX?",
-          options: [
-            { id: 1, label: "A", text: "A JavaScript extension", isCorrect: true },
-            { id: 2, label: "B", text: "A template language", isCorrect: false },
-            { id: 3, label: "C", text: "A state management library", isCorrect: false },
-            { id: 4, label: "D", text: "A testing framework", isCorrect: false }
-          ]
-        }
-      ]
-    }
-  ]);
+  const [quizzes, setQuizzes] = useState([]);
 
-  const [flashcards, setFlashcards] = useState([
-    {
-      id: "f1",
-      title: "Data Structures",
-      description: "Learn key DS concepts",
-      img: test,
-      clerkId: "123",
-      cards: [
-        { id: 1, question: "What is a linked list?", answer: "A linear data structure where elements are stored in nodes" },
-        { id: 2, question: "What is the time complexity of accessing an element in an array?", answer: "O(1)" }
-      ]
-    },
-    {
-      id: "f2",
-      title: "Networking",
-      description: "Important networking flashcards",
-      img: test,
-      clerkId: "123",
-      cards: [
-        { id: 1, question: "What is TCP?", answer: "Transmission Control Protocol" },
-        { id: 2, question: "What is the purpose of DNS?", answer: "To translate domain names to IP addresses" }
-      ]
+  const [flashcards, setFlashcards] = useState([]);
+
+  const fetchQuizzes = async () => {
+    try {
+      const token = await getToken();
+      const response = await axios.get(apiEndpoints.FETCH_QUIZZES,
+        {
+          headers: {Authorization: `Bearer ${token}`}
+        }
+      );
+      console.log(response.data);
+      if(response.status === 200) {
+        setQuizzes(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(error);
     }
-  ]);
+  }
+
+  const fetchFlashcards = async () => {
+    try {
+      const token = await getToken();
+      const response = await axios.get(apiEndpoints.FETCH_FLASHCARDS,
+        {
+          headers: {Authorization: `Bearer ${token}`}
+        }
+      );
+      console.log(response.data);
+      if(response.status === 200) {
+        setFlashcards(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(error);
+    }
+  }
+
+  useEffect(()=> {
+    if(activeTab === 'quizzes'){
+      fetchQuizzes();
+    } else{
+      fetchFlashcards();
+    }
+
+  },[activeTab]);
 
   // Filter based on search
   const filteredQuizzes = quizzes.filter((q) =>
@@ -179,18 +164,15 @@ const Dashboard = () => {
               ? filteredQuizzes.map((quiz) => (
                   <QuizCard
                     key={quiz.id}
-                    title={quiz.title}
-                    img={quiz.img}
-                    questions={quiz.questions}
+                    quiz={quiz}
+                    navigate={navigate}
                   />
                 ))
               : filteredFlashcards.map((flashcard) => (
                   <FlashcardCard
                     key={flashcard.id}
-                    title={flashcard.title}
-                    img={flashcard.img}
-                    description={flashcard.description}
-                    cards={flashcard.cards}
+                    flashcard={flashcard}
+                    navigate={navigate}
                   />
                 ))}
           </div>
@@ -201,12 +183,12 @@ const Dashboard = () => {
 };
 
 // Quiz Card Component
-const QuizCard = ({ title, img, questions }) => (
+const QuizCard = ({ quiz, navigate }) => (
   <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all overflow-hidden group">
     <div className="relative">
       <img
-        src={img}
-        alt={title}
+        src={quiz && quiz.img ? quiz.img : defaultImage}
+        alt={quiz && quiz.title}
         className="w-full h-40 object-cover"
       />
       <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -217,20 +199,22 @@ const QuizCard = ({ title, img, questions }) => (
     </div>
     
     <div className="p-5">
-      <h3 className="font-semibold text-gray-900 mb-3 line-clamp-1">{title}</h3>
+      <h3 className="font-semibold text-gray-900 mb-3 line-clamp-1">{quiz && quiz.title}</h3>
       
       <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
         <div className="flex items-center gap-1">
           <FileText className="w-4 h-4" />
-          <span>{questions.length} questions</span>
+          <span>{quiz && quiz.questions.length} questions</span>
         </div>
         <div className="flex items-center gap-1">
           <Clock className="w-4 h-4" />
-          <span>{Math.ceil(questions.length * 0.8)} min</span>
+          <span>{Math.ceil(quiz && quiz.questions.length * 0.8)} min</span>
         </div>
       </div>
       
-      <button className="w-full flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors">
+      <button 
+        onClick={() => navigate("/quizzes/"+ quiz.id)}
+        className="w-full flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors">
         <Eye className="w-4 h-4" />
         View Quiz
       </button>
@@ -239,12 +223,12 @@ const QuizCard = ({ title, img, questions }) => (
 );
 
 // Flashcard Card Component
-const FlashcardCard = ({ title, img, description, cards }) => (
+const FlashcardCard = ({ flashcard, navigate }) => (
   <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all overflow-hidden group">
     <div className="relative">
       <img
-        src={img}
-        alt={title}
+        src={flashcard && flashcard.img ? flashcard.img : defaultImage}
+        alt={flashcard && flashcard.title}
         className="w-full h-40 object-cover"
       />
       <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -255,21 +239,23 @@ const FlashcardCard = ({ title, img, description, cards }) => (
     </div>
     
     <div className="p-5">
-      <h3 className="font-semibold text-gray-900 mb-2 line-clamp-1">{title}</h3>
-      <p className="text-gray-600 text-sm mb-4 line-clamp-2">{description}</p>
+      <h3 className="font-semibold text-gray-900 mb-2 line-clamp-1">{flashcard && flashcard.title}</h3>
+      <p className="text-gray-600 text-sm mb-4 line-clamp-2">{flashcard && flashcard.description}</p>
       
       <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
         <div className="flex items-center gap-1">
           <FileText className="w-4 h-4" />
-          <span>{cards.length} cards</span>
+          <span>{flashcard && flashcard.cards.length} cards</span>
         </div>
         <div className="flex items-center gap-1">
           <Clock className="w-4 h-4" />
-          <span>{Math.ceil(cards.length * 0.5)} min</span>
+          <span>{Math.ceil(flashcard && flashcard.length * 0.5)} min</span>
         </div>
       </div>
       
-      <button className="w-full flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors">
+      <button 
+        onClick={() => navigate("/flashcards/" + flashcard.id)}
+        className="w-full flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors">
         <Eye className="w-4 h-4" />
         Study Now
       </button>

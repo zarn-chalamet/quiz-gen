@@ -1,28 +1,47 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import PageLayout from "../layout/PageLayout";
 import { motion, AnimatePresence } from "framer-motion";
+import axios from "axios";
+import { apiEndpoints } from "../api/apiEndpoints";
+import toast from "react-hot-toast";
+import { useAuth } from "@clerk/clerk-react";
+import { useParams } from "react-router-dom";
 
 const FlashcardLearnPage = () => {
-  const flashcardData = {
-    id: "1",
-    title: "React Basics",
-    description: "Learn the fundamentals of React.js step by step.",
-    img: "https://images.unsplash.com/photo-1555066931-4365d14bab8c",
-    cards: [
-      { id: 1, question: "What is React?", answer: "A JavaScript library for building user interfaces, particularly single-page applications where data changes over time." },
-      { id: 2, question: "What is JSX?", answer: "A syntax extension that lets you write HTML-like code in JavaScript, which React then transforms into actual JavaScript function calls." },
-      { id: 3, question: "What are hooks?", answer: "Functions that let you use state and lifecycle features in functional components, introduced in React 16.8." },
-      { id: 4, question: "What is Virtual DOM?", answer: "A programming concept where a virtual representation of the UI is kept in memory and synced with the real DOM by a library such as ReactDOM." },
-    ],
-  };
+  const [flashcardData,setFlashcardData] = useState();
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [direction, setDirection] = useState(0); // 0: next, 1: prev
   const [completed, setCompleted] = useState(false);
+  const {id} = useParams();
+  const {getToken} = useAuth();
+
+
+  const fetchFlashcard = async (id) => {
+    try {
+      const token = await getToken();
+      const response = await axios.get(apiEndpoints.FETCH_FLASHCARD_BY_ID(id),
+        {
+          headers: {Authorization: `Bearer ${token}`}
+        }
+      );
+      console.log(response.data);
+      if(response.status === 200) {
+        setFlashcardData(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(error);
+    }
+  }
+
+  useEffect(() => {
+    fetchFlashcard(id);
+  },[id])
 
   const handleNext = () => {
-    if (currentIndex < flashcardData.cards.length - 1) {
+    if (currentIndex < ( flashcardData && flashcardData.cards.length - 1)) {
       setDirection(0);
       setCurrentIndex(prev => prev + 1);
       setFlipped(false);
@@ -45,9 +64,9 @@ const FlashcardLearnPage = () => {
     setCompleted(false);
   };
 
-  const isFinished = currentIndex >= flashcardData.cards.length;
-  const currentCard = flashcardData.cards[currentIndex];
-  const progress = ((currentIndex + 1) / flashcardData.cards.length) * 100;
+  const isFinished = currentIndex >= (flashcardData && flashcardData.cards.length);
+  const currentCard = flashcardData && flashcardData.cards[currentIndex];
+  const progress = ((currentIndex + 1) / (flashcardData &&flashcardData.cards.length)) * 100;
 
   // Card flip variants for animation
   const cardVariants = {
@@ -73,7 +92,11 @@ const FlashcardLearnPage = () => {
 
   return (
     <PageLayout>
-      <div className="min-h-150 bg-gradient-to-br from-indigo-50 to-purple-50  flex items-center justify-center">
+
+      {
+        flashcardData &&
+        
+        <div className="min-h-150 bg-gradient-to-br from-indigo-50 to-purple-50  flex items-center justify-center">
         <div className="max-w-3xl w-full mx-auto my-auto">
           {/* Header */}
           <motion.div 
@@ -237,6 +260,9 @@ const FlashcardLearnPage = () => {
           )}
         </div>
       </div>
+
+      }
+      
     </PageLayout>
   );
 };

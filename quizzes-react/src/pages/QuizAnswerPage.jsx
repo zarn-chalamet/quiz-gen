@@ -2,6 +2,10 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import PageLayout from "../layout/PageLayout";
 import { motion, AnimatePresence } from "framer-motion";
+import toast from "react-hot-toast";
+import { useAuth } from "@clerk/clerk-react";
+import axios from "axios";
+import { apiEndpoints } from "../api/apiEndpoints";
 
 const QuizAnswerPage = () => {
   const { id } = useParams();
@@ -11,47 +15,29 @@ const QuizAnswerPage = () => {
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const {getToken} = useAuth();
 
+
+  const fetchQuiz = async (id) => {
+    try {
+      const token = await getToken();
+      const response = await axios.get(apiEndpoints.FETCH_QUIZ_BY_ID(id),
+        {
+          headers: {Authorization: `Bearer ${token}`}
+        }
+      );
+      console.log(response.data);
+      if(response.status === 200) {
+        setQuiz(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(error);
+    }
+  }
   // Mock fetch (replace with API call)
   useEffect(() => {
-    const data = {
-      id: id,
-      title: "Java Basics Quiz",
-      img: "https://source.unsplash.com/800x400/?education,quiz",
-      questions: [
-        {
-          id: 1,
-          text: "What is JVM in Java?",
-          options: [
-            { id: 1, label: "A", text: "Java Virtual Machine", isCorrect: true },
-            { id: 2, label: "B", text: "Java Vendor Machine", isCorrect: false },
-            { id: 3, label: "C", text: "Java Visual Model", isCorrect: false },
-            { id: 4, label: "D", text: "None of the above", isCorrect: false },
-          ],
-        },
-        {
-          id: 2,
-          text: "Which keyword is used to inherit a class in Java?",
-          options: [
-            { id: 1, label: "A", text: "implement", isCorrect: false },
-            { id: 2, label: "B", text: "extends", isCorrect: true },
-            { id: 3, label: "C", text: "inherits", isCorrect: false },
-            { id: 4, label: "D", text: "super", isCorrect: false },
-          ],
-        },
-        {
-          id: 3,
-          text: "What is the default value of a local variable in Java?",
-          options: [
-            { id: 1, label: "A", text: "null", isCorrect: false },
-            { id: 2, label: "B", text: "0", isCorrect: false },
-            { id: 3, label: "C", text: "Depends on data type", isCorrect: false },
-            { id: 4, label: "D", text: "No default value", isCorrect: true },
-          ],
-        },
-      ],
-    };
-    setQuiz(data);
+    fetchQuiz(id);
   }, [id]);
 
   const handleSelect = (opt) => {

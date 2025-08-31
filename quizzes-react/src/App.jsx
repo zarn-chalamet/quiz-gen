@@ -6,11 +6,13 @@ import Dashboard from './pages/Dashboard';
 import MyQuizzes from "./pages/MyQuizzes"
 import QuizAnswerPage from './pages/QuizAnswerPage';
 import FlashcardLearnPage from './pages/FlashcardLearnPage';
+import { Toaster } from 'react-hot-toast';
 
 function App() {
 
    return (
     <BrowserRouter>
+      <Toaster/>
       <Routes>
         <Route path='/' element={
           <>

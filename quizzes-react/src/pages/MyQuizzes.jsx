@@ -2,6 +2,11 @@ import React, { useState, useEffect } from "react";
 import PageLayout from "../layout/PageLayout";
 import { Search, BookOpen, Layers, Eye, MoreVertical, Plus, Filter, FileText, Clock, Edit, Trash2 } from "lucide-react";
 import test from "../assets/test.jpg";
+import { useAuth } from "@clerk/clerk-react";
+import axios from "axios";
+import { apiEndpoints } from "../api/apiEndpoints";
+import toast from "react-hot-toast";
+import defaultImage from "../assets/test.jpg"
 
 const MyQuizzes = () => {
   const [activeTab, setActiveTab] = useState("quizzes");
@@ -10,84 +15,57 @@ const MyQuizzes = () => {
   const [openMenuId, setOpenMenuId] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const {getToken} = useAuth();
 
   // Mock data matching your DTO structure
-  const [quizzes, setQuizzes] = useState([
-    {
-      id: "1",
-      title: "Java Basics",
-      img: test,
-      clerkId: "123",
-      questions: [
-        {
-          id: 1,
-          text: "What is the default value of a boolean variable in Java?",
-          options: [
-            { id: 1, label: "A", text: "true", isCorrect: false },
-            { id: 2, label: "B", text: "false", isCorrect: true },
-            { id: 3, label: "C", text: "null", isCorrect: false },
-            { id: 4, label: "D", text: "0", isCorrect: false }
-          ]
-        },
-        {
-          id: 2,
-          text: "Which keyword is used to inherit a class in Java?",
-          options: [
-            { id: 1, label: "A", text: "implements", isCorrect: false },
-            { id: 2, label: "B", text: "extends", isCorrect: true },
-            { id: 3, label: "C", text: "inherits", isCorrect: false },
-            { id: 4, label: "D", text: "super", isCorrect: false }
-          ]
-        }
-      ]
-    },
-    {
-      id: "2",
-      title: "React Fundamentals",
-      img: test,
-      clerkId: "123",
-      questions: [
-        {
-          id: 1,
-          text: "What is JSX?",
-          options: [
-            { id: 1, label: "A", text: "A JavaScript extension", isCorrect: true },
-            { id: 2, label: "B", text: "A template language", isCorrect: false },
-            { id: 3, label: "C", text: "A state management library", isCorrect: false },
-            { id: 4, label: "D", text: "A testing framework", isCorrect: false }
-          ]
-        }
-      ]
-    }
-  ]);
+  const [quizzes, setQuizzes] = useState([]);
 
-  const [flashcards, setFlashcards] = useState([
-    {
-      id: "f1",
-      title: "Data Structures",
-      description: "Learn key DS concepts",
-      img: test,
-      clerkId: "123",
-      cards: [
-        { id: 1, question: "What is a linked list?", answer: "A linear data structure where elements are stored in nodes" },
-        { id: 2, question: "What is the time complexity of accessing an element in an array?", answer: "O(1)" }
-      ]
-    },
-    {
-      id: "f2",
-      title: "Networking",
-      description: "Important networking flashcards",
-      img: test,
-      clerkId: "123",
-      cards: [
-        { id: 1, question: "What is TCP?", answer: "Transmission Control Protocol" },
-        { id: 2, question: "What is the purpose of DNS?", answer: "To translate domain names to IP addresses" }
-      ]
+  const [flashcards, setFlashcards] = useState([]);
+
+  const fetchQuizzes = async () => {
+    try {
+      const token = await getToken();
+      const response = await axios.get(apiEndpoints.FETCH_USER_QUIZZES,
+        {
+          headers: {Authorization: `Bearer ${token}`}
+        }
+      );
+      console.log(response.data);
+      if(response.status === 200) {
+        setQuizzes(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(error);
     }
-  ]);
+  }
+
+  const fetchFlashcards = async () => {
+    try {
+      const token = await getToken();
+      const response = await axios.get(apiEndpoints.FETCH_USER_FLASHCARDS,
+        {
+          headers: {Authorization: `Bearer ${token}`}
+        }
+      );
+      console.log(response.data);
+      if(response.status === 200) {
+        setFlashcards(response.data);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(error);
+    }
+  }
 
   // Close menu when clicking outside
   useEffect(() => {
+
+    if(activeTab === "quizzes") {
+      fetchQuizzes();
+    } else {
+      fetchFlashcards();
+    }
     const handleClickOutside = () => {
       setOpenMenuId(null);
     };
@@ -96,7 +74,7 @@ const MyQuizzes = () => {
     return () => {
       document.removeEventListener("click", handleClickOutside);
     };
-  }, []);
+  }, [activeTab]);
 
   // Filter based on search
   const filteredQuizzes = quizzes.filter((q) =>
@@ -327,7 +305,7 @@ const QuizCard = ({ quiz, openMenuId, setOpenMenuId, onEdit, onDelete }) => {
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all overflow-hidden group">
       <div className="relative">
         <img
-          src={img}
+          src={img ? img : defaultImage}
           alt={title}
           className="w-full h-40 object-cover"
         />
@@ -402,7 +380,7 @@ const FlashcardCard = ({ flashcard, openMenuId, setOpenMenuId, onEdit, onDelete 
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all overflow-hidden group">
       <div className="relative">
         <img
-          src={img}
+          src={img ? img : defaultImage}
           alt={title}
           className="w-full h-40 object-cover"
         />
