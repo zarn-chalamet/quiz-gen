@@ -176,7 +176,7 @@ const PageLayout = ({ children }) => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 p-4 sm:p-6 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto">
         <div className="max-w-7xl mx-auto">
           {children}
         </div>

@@ -42,7 +42,7 @@ const ProjectOutLine = () => {
             </section>
 
             {/* Minimal Features */}
-            <section id="features" className="py-16 bg-gray-50">
+            <section id="features" className="mt-5 py-16 bg-gray-50">
                 <div className="max-w-6xl mx-auto px-5">
                 <div className="text-center max-w-xl mx-auto mb-12">
                     <h3 className="text-2xl font-bold mb-3">Intelligent Quiz Creation</h3>

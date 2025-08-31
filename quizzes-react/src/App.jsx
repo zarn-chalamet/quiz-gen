@@ -4,6 +4,8 @@ import './App.css'
 import ProjectOutLine from './ProjectOutLine';
 import Dashboard from './pages/Dashboard';
 import MyQuizzes from "./pages/MyQuizzes"
+import QuizAnswerPage from './pages/QuizAnswerPage';
+import FlashcardLearnPage from './pages/FlashcardLearnPage';
 
 function App() {
 
@@ -27,6 +29,20 @@ function App() {
         <Route path='/my-quizzes' element={
           <>
             <SignedIn><MyQuizzes /></SignedIn>
+            <SignedOut><RedirectToSignIn/></SignedOut>
+          </>
+        }/>
+
+        <Route path='/quizzes/:id' element={
+          <>
+            <SignedIn><QuizAnswerPage /></SignedIn>
+            <SignedOut><RedirectToSignIn/></SignedOut>
+          </>
+        }/>
+
+        <Route path='/flashcards/:id' element={
+          <>
+            <SignedIn><FlashcardLearnPage /></SignedIn>
             <SignedOut><RedirectToSignIn/></SignedOut>
           </>
         }/>
