@@ -1,5 +1,10 @@
 import React, { useState } from "react";
-import { X, Plus, Trash, Upload, FileText, Image as ImageIcon, ChevronDown, Check, BookOpen, Layers } from "lucide-react";
+import { X, Plus, Trash, Upload, FileText, Image as ImageIcon, ChevronDown, Check, BookOpen, Layers, LinkIcon } from "lucide-react";
+import toast from "react-hot-toast";
+import { useAuth } from "@clerk/clerk-react";
+import axios from "axios";
+import { apiEndpoints } from "../api/apiEndpoints";
+import { useNavigate } from "react-router-dom";
 
 const CreateModal = ({ onClose, type }) => {
   const [activeTab, setActiveTab] = useState("manual");
@@ -20,6 +25,10 @@ const CreateModal = ({ onClose, type }) => {
   const [cards, setCards] = useState([{ question: "", answer: "" }]);
   const [studyFile, setStudyFile] = useState(null);
   const [coverImage, setCoverImage] = useState(null);
+  const [coverImageUrl, setCoverImageUrl] = useState("");
+  const [quantity, setQuantity] = useState(1);
+  const {getToken} = useAuth();
+  const navigate = useNavigate();
 
   // Quiz helpers
   const addQuestion = () => {
@@ -78,20 +87,98 @@ const CreateModal = ({ onClose, type }) => {
   const addCard = () => setCards((prev) => [...prev, { question: "", answer: "" }]);
   const removeCard = (cIndex) => setCards((prev) => prev.filter((_, i) => i !== cIndex));
 
+  const createQuiz = async (payload) => {
+    try {
+      const token = await getToken();
+      const response = await axios.post(apiEndpoints.CREATE_QUIZ,payload,
+        {
+          headers: {Authorization: `Bearer ${token}`}
+        }
+      );
+      console.log(response.data);
+      if(response.status === 201) {
+        navigate("/dashboard")
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(error);
+    }
+  }
+
+  const createFlashcard = async (payload) => {
+    try {
+      const token = await getToken();
+      const response = await axios.post(apiEndpoints.CREATE_FLASHCARD,payload,
+        {
+          headers: {Authorization: `Bearer ${token}`}
+        }
+      );
+      console.log(response.data);
+      if(response.status === 201) {
+        navigate("/dashboard")
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(error);
+    }
+  }
+
+  const generateQuiz = async (form) => {
+    try {
+      const token = await getToken();
+      const response = await axios.post(apiEndpoints.GENERATE_QUIZ,form,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+      console.log(response.data);
+      if(response.status === 201) {
+        navigate("/dashboard")
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(error);
+    }
+  }
+
+  const generateFlashcard = async (form) => {
+    try {
+      const token = await getToken();
+      const response = await axios.post(apiEndpoints.GENERATE_FLASHCARD,form,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+      console.log(response.data);
+      if(response.status === 201) {
+        navigate("/dashboard")
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(error);
+    }
+  }
+
   // Submit handler
   const handleSubmit = () => {
-    if (!title.trim()) {
-      alert("Please provide a title");
-      return;
-    }
+    
 
     if (activeTab === "manual") {
+
+      if (!title.trim()) {
+        alert("Please provide a title");
+        return;
+      }
       if (type === "quiz") {
         const payload = {
-          id: "",
           title,
           img: imgUrl || "",
-          clerkId: "",
           questions: questions.map((q, qi) => ({
             id: qi + 1,
             text: q.text,
@@ -104,13 +191,13 @@ const CreateModal = ({ onClose, type }) => {
           })),
         };
         console.log("QuizDto payload:", payload);
+
+        createQuiz(payload);
       } else {
         const payload = {
-          id: "",
           title,
           description,
           img: imgUrl || "",
-          clerkId: "",
           cards: cards.map((c, ci) => ({
             id: ci + 1,
             question: c.question,
@@ -118,15 +205,38 @@ const CreateModal = ({ onClose, type }) => {
           })),
         };
         console.log("FlashcardDto payload:", payload);
+
+        createFlashcard(payload);
       }
     } else {
-      const form = new FormData();
-      if (studyFile) form.append("file", studyFile);
-      if (coverImage) form.append("image", coverImage);
-      form.append("title", title);
-      if (type === "flashcard") form.append("description", description);
 
-      console.log("Upload formData:", { title, description, studyFile, coverImage });
+      if (!studyFile) {
+        toast.error("Please upload a study file!");
+        return;
+      }
+
+      if(type === "quiz"){
+        
+        const form = new FormData();
+        form.append("file",studyFile);
+        form.append("quantity",quantity);
+
+        //will fix about the image next time
+
+        generateQuiz(form);
+        
+
+      } else {
+        const form = new FormData();
+        form.append("file",studyFile);
+        form.append("quantity",quantity);
+        
+        //will fix about the image next time
+
+        generateFlashcard(form);
+
+      }
+      
     }
 
     onClose();
@@ -195,26 +305,35 @@ const CreateModal = ({ onClose, type }) => {
         <div className="flex-1 overflow-y-auto p-6">
           {/* Shared fields */}
           <div className="grid md:grid-cols-2 gap-4 mb-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
-              <input
-                type="text"
-                placeholder="Enter title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cover Image URL</label>
-              <input
-                type="text"
-                placeholder="https://example.com/image.jpg"
-                value={imgUrl}
-                onChange={(e) => setImgUrl(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-              />
-            </div>
+
+            {
+              activeTab === "manual" && (
+
+              <>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                  <input
+                    type="text"
+                    placeholder="Enter title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Cover Image URL</label>
+                  <input
+                    type="text"
+                    placeholder="https://example.com/image.jpg"
+                    value={imgUrl}
+                    onChange={(e) => setImgUrl(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  />
+                </div>
+              </> )
+            }
+            
           </div>
 
           {/* Flashcard description */}
@@ -384,7 +503,21 @@ const CreateModal = ({ onClose, type }) => {
           ) : (
             // Upload tab
             <div className="space-y-5">
+              {/* Quantity input */}
+              <div>
+                <label className="block text-gray-700 font-medium mb-2">Quantity</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  className="w-32 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* File + Image section */}
               <div className="grid md:grid-cols-2 gap-5">
+                {/* Study File Upload */}
                 <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 transition-colors">
                   <label className="cursor-pointer block">
                     <input
@@ -399,7 +532,9 @@ const CreateModal = ({ onClose, type }) => {
                     <p className="font-medium text-gray-700 mb-1">Study File</p>
                     <p className="text-sm text-gray-500 mb-3">PDF, DOC, TXT</p>
                     {studyFile ? (
-                      <p className="text-sm text-blue-600 font-medium truncate">{studyFile.name}</p>
+                      <p className="text-sm text-blue-600 font-medium truncate">
+                        {studyFile.name}
+                      </p>
                     ) : (
                       <span className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg">
                         <Upload className="w-4 h-4" />
@@ -409,45 +544,59 @@ const CreateModal = ({ onClose, type }) => {
                   </label>
                 </div>
 
-                <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 transition-colors">
-                  <label className="cursor-pointer block">
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={(e) => setCoverImage(e.target.files?.[0] || null)}
-                    />
-                    <div className="w-12 h-12 mx-auto bg-purple-100 rounded-full flex items-center justify-center mb-3">
-                      <ImageIcon className="w-6 h-6 text-purple-600" />
+                {/* Cover Image Upload OR URL */}
+                <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-purple-400 transition-colors">
+                  <div className="flex flex-col gap-3">
+                    {/* Upload */}
+                      <label className="cursor-pointer block">
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept="image/*"
+                          onChange={(e) => {
+                            setCoverImage(e.target.files?.[0] || null);
+                            setCoverImageUrl(""); // clear URL if uploading
+                          }}
+                        />
+                        <div className="w-12 h-12 mx-auto bg-purple-100 rounded-full flex items-center justify-center mb-3">
+                          <ImageIcon className="w-6 h-6 text-purple-600" />
+                        </div>
+                        <p className="font-medium text-gray-700 mb-1">Cover Image</p>
+                        <p className="text-sm text-gray-500 mb-3">Upload (PNG, JPG, JPEG)</p>
+                        {coverImage ? (
+                          <p className="text-sm text-purple-600 font-medium truncate">
+                            {coverImage.name}
+                          </p>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded-lg">
+                            <ImageIcon className="w-4 h-4" />
+                            Select Image
+                          </span>
+                        )}
+                      </label>
+
+                      {/* OR paste URL */}
+                      <div>
+                        <p className="text-sm text-gray-500 mb-2">Or paste image URL</p>
+                        <div className="flex items-center gap-2">
+                          <LinkIcon className="w-4 h-4 text-gray-400" />
+                          <input
+                            type="url"
+                            placeholder="https://example.com/image.jpg"
+                            value={coverImageUrl}
+                            onChange={(e) => {
+                              setCoverImageUrl(e.target.value);
+                              setCoverImage(null); // clear file if entering URL
+                            }}
+                            className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <p className="font-medium text-gray-700 mb-1">Cover Image</p>
-                    <p className="text-sm text-gray-500 mb-3">PNG, JPG, JPEG</p>
-                    {coverImage ? (
-                      <p className="text-sm text-purple-600 font-medium truncate">{coverImage.name}</p>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded-lg">
-                        <ImageIcon className="w-4 h-4" />
-                        Select Image
-                      </span>
-                    )}
-                  </label>
+                  </div>
                 </div>
               </div>
-
-              {type === "flashcard" && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                  <textarea
-                    placeholder="Enter a description for your flashcard set"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    rows={3}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  />
-                </div>
               )}
-            </div>
-          )}
         </div>
 
         {/* Footer */}
@@ -463,7 +612,7 @@ const CreateModal = ({ onClose, type }) => {
               onClick={handleSubmit}
               className="px-5 py-2.5 rounded-lg text-white bg-gradient-to-r from-blue-600 to-blue-700 text-sm font-medium shadow-sm hover:from-blue-700 hover:to-blue-800 transition-all"
             >
-              {activeTab === "manual" ? "Create" : "Upload & Process"}
+              {activeTab === "manual" ? "Create" : "Upload"}
             </button>
           </div>
         </div>
