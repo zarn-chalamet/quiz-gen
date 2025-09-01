@@ -7,6 +7,8 @@ import axios from "axios";
 import { apiEndpoints } from "../api/apiEndpoints";
 import toast from "react-hot-toast";
 import defaultImage from "../assets/test.jpg"
+import CreateModal from "../modal/CreateModal";
+import { useNavigate } from "react-router-dom";
 
 const MyQuizzes = () => {
   const [activeTab, setActiveTab] = useState("quizzes");
@@ -16,6 +18,7 @@ const MyQuizzes = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const {getToken} = useAuth();
+  const navigate = useNavigate();
 
   // Mock data matching your DTO structure
   const [quizzes, setQuizzes] = useState([]);
@@ -84,11 +87,51 @@ const MyQuizzes = () => {
     f.title.toLowerCase().includes(search.toLowerCase())
   );
 
+  const deleteQuiz = async (id) => {
+    try {
+      const token = await getToken();
+      const response = await axios.delete(apiEndpoints.DELETE_QUIZ(id),{
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      console.log(response);
+      if(response.status === 200) {
+        toast.success("Quiz deleted!");
+        navigate("/my-quizzes");
+      }
+      
+    } catch (error) {
+      console.log(error);
+      toast.error(error);
+    }
+  }
+
+  const deleteFlashcard = async (id) => {
+    try {
+      const token = await getToken();
+      const response = await axios.delete(apiEndpoints.DELETE_FLASHCARD(id),{
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      console.log(response);
+      if(response.status === 200) {
+        toast.success("Flashcard deleted!");
+        navigate("/my-quizzes");
+      }
+      
+    } catch (error) {
+      console.log(error);
+      toast.error(error);
+    }
+  }
+
   // Handle delete item
   const handleDelete = (type, id) => {
     if (type === "quiz") {
+      deleteQuiz(id);
       setQuizzes(quizzes.filter(quiz => quiz.id !== id));
     } else {
+      deleteFlashcard(id);
       setFlashcards(flashcards.filter(flashcard => flashcard.id !== id));
     }
     setDeleteConfirm(null);
@@ -184,45 +227,13 @@ const MyQuizzes = () => {
 
         {/* Edit Modal */}
         {editingItem && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl p-6 w-full max-w-md">
-              <h2 className="text-xl font-bold mb-4">Edit {editingItem.type === "quiz" ? "Quiz" : "Flashcard"}</h2>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                <input
-                  type="text"
-                  value={editingItem.title}
-                  onChange={(e) => setEditingItem({...editingItem, title: e.target.value})}
-                  className="w-full p-2 border border-gray-300 rounded-lg"
-                />
-              </div>
-              {editingItem.type === "flashcard" && (
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                  <textarea
-                    value={editingItem.description}
-                    onChange={(e) => setEditingItem({...editingItem, description: e.target.value})}
-                    className="w-full p-2 border border-gray-300 rounded-lg"
-                    rows="3"
-                  />
-                </div>
-              )}
-              <div className="flex justify-end gap-3">
-                <button 
-                  onClick={() => setEditingItem(null)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={handleSaveEdit}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  Save Changes
-                </button>
-              </div>
-            </div>
-          </div>
+          <CreateModal 
+            onClose={() => {
+              setEditingItem(null);
+            }}
+            type={editingItem?.type}
+            editingItem={editingItem}
+          />
         )}
 
         {/* Delete Confirmation Modal */}
@@ -293,6 +304,7 @@ const MyQuizzes = () => {
           </div>
         )}
       </div>
+
     </PageLayout>
   );
 };
@@ -368,12 +380,14 @@ const QuizCard = ({ quiz, openMenuId, setOpenMenuId, onEdit, onDelete }) => {
           View Quiz
         </button>
       </div>
+
+      
     </div>
   );
 };
 
 // Flashcard Card Component
-const FlashcardCard = ({ flashcard, openMenuId, setOpenMenuId, onEdit, onDelete }) => {
+const FlashcardCard = ({ flashcard, openMenuId, setOpenMenuId, onEdit, onDelete, }) => {
   const { title, img, description, cards } = flashcard;
 
   return (

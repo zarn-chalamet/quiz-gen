@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { X, Plus, Trash, Upload, FileText, Image as ImageIcon, ChevronDown, Check, BookOpen, Layers, LinkIcon } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from "@clerk/clerk-react";
@@ -6,7 +6,7 @@ import axios from "axios";
 import { apiEndpoints } from "../api/apiEndpoints";
 import { useNavigate } from "react-router-dom";
 
-const CreateModal = ({ onClose, type }) => {
+const CreateModal = ({ onClose, type, editingItem }) => {
   const [activeTab, setActiveTab] = useState("manual");
   const [title, setTitle] = useState("");
   const [imgUrl, setImgUrl] = useState("");
@@ -168,7 +168,6 @@ const CreateModal = ({ onClose, type }) => {
   // Submit handler
   const handleSubmit = () => {
     
-
     if (activeTab === "manual") {
 
       if (!title.trim()) {
@@ -192,7 +191,13 @@ const CreateModal = ({ onClose, type }) => {
         };
         console.log("QuizDto payload:", payload);
 
-        createQuiz(payload);
+        if (editingItem) {
+          console.log(editingItem);
+          updateQuiz(editingItem.id, payload);
+        } else {
+          createQuiz(payload);
+        }
+
       } else {
         const payload = {
           title,
@@ -206,7 +211,12 @@ const CreateModal = ({ onClose, type }) => {
         };
         console.log("FlashcardDto payload:", payload);
 
-        createFlashcard(payload);
+        if (editingItem) {
+          updateFlashcard(editingItem.id, payload);
+        } else {
+          createFlashcard(payload);
+        }
+
       }
     } else {
 
@@ -242,6 +252,58 @@ const CreateModal = ({ onClose, type }) => {
     onClose();
   };
 
+  const updateQuiz = async (id, payload) => {
+    try {
+      const token = await getToken();
+      const response = await axios.patch(apiEndpoints.UPDATE_QUIZ(id), payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      console.log(response);
+      if(response.status === 200) {
+        toast.success("Quizz updated!");
+        navigate("/my-quizzes");
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(error);
+    }
+  };
+
+const updateFlashcard = async (id, payload) => {
+  try {
+    const token = await getToken();
+    const response = await axios.patch(apiEndpoints.UPDATE_FLASHCARD(id), payload, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    console.log(response);
+    if(response.status === 200) {
+      toast.success("Flashcard updated!");
+      navigate("/my-quizzes");
+    }
+    
+  } catch (error) {
+    console.log(error);
+    toast.error(error);
+  }
+};
+
+
+  useEffect(() => {
+    if (editingItem) {
+      setTitle(editingItem.title || "");
+      setImgUrl(editingItem.img || "");
+      if (editingItem.type === "quiz") {
+        setQuestions(editingItem.questions || []);
+      } else {
+        setDescription(editingItem.description || "");
+        setCards(editingItem.cards || []);
+      }
+    }
+  }, [editingItem]);
+
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-200 bg-opacity-50 p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
@@ -257,7 +319,7 @@ const CreateModal = ({ onClose, type }) => {
             </div>
             <div>
               <h2 className="text-xl font-semibold text-gray-900">
-                Create New {type === "quiz" ? "Quiz" : "Flashcards"}
+                {editingItem ? `Edit ${type === "quiz" ? "Quiz" : "Flashcards"}` : `Create New ${type === "quiz" ? "Quiz" : "Flashcards"}`}
               </h2>
               <p className="text-sm text-gray-500">
                 {type === "quiz"
@@ -276,30 +338,33 @@ const CreateModal = ({ onClose, type }) => {
         </div>
 
         {/* Tabs */}
-        <div className="px-6 pt-4">
-          <div className="inline-flex bg-gray-100 p-1 rounded-lg">
-            {[
-              { key: "manual", label: "Create Manually", icon: Plus },
-              { key: "upload", label: "Upload File", icon: Upload },
-            ].map((tab) => {
-              const IconComponent = tab.icon;
-              return (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
-                  className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-all ${
-                    activeTab === tab.key
-                      ? "bg-white text-blue-600 shadow-sm"
-                      : "text-gray-600 hover:text-gray-800"
-                  }`}
-                >
-                  <IconComponent className="w-4 h-4" />
-                  {tab.label}
-                </button>
-              );
-            })}
+        {
+          !editingItem && 
+          <div className="px-6 pt-4">
+            <div className="inline-flex bg-gray-100 p-1 rounded-lg">
+              {[
+                { key: "manual", label: "Create Manually", icon: Plus },
+                { key: "upload", label: "Upload File", icon: Upload },
+              ].map((tab) => {
+                const IconComponent = tab.icon;
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                      activeTab === tab.key
+                        ? "bg-white text-blue-600 shadow-sm"
+                        : "text-gray-600 hover:text-gray-800"
+                    }`}
+                  >
+                    <IconComponent className="w-4 h-4" />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        }
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
@@ -612,7 +677,13 @@ const CreateModal = ({ onClose, type }) => {
               onClick={handleSubmit}
               className="px-5 py-2.5 rounded-lg text-white bg-gradient-to-r from-blue-600 to-blue-700 text-sm font-medium shadow-sm hover:from-blue-700 hover:to-blue-800 transition-all"
             >
-              {activeTab === "manual" ? "Create" : "Upload"}
+              {editingItem 
+                ? "Update" 
+                : activeTab === "manual" 
+                  ? "Create" 
+                  : "Upload"
+              }
+
             </button>
           </div>
         </div>
